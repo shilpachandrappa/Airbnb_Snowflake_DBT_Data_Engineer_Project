@@ -37,8 +37,7 @@ The architecture decouples storage from compute, utilizing AWS for durable file 
                                                │   🥇 GOLD LAYER         │
                                                │  (Analytics & OBT/Fact) │
                                                └─────────────────────────┘
-
-
+```
 🛠️ Technology Stack
 
 | Layer | Technology | Purpose |
@@ -59,21 +58,10 @@ This project demonstrates production-grade analytics engineering patterns using 
 *   **🕒 Snapshots (SCD Type 2):** Captured historical changes over time for dimensions (`bookings`, `hosts`, `listings`) to maintain an accurate audit trail.
 *   **🧩 Custom Macros:** Built reusable DRY (*Don't Repeat Yourself*) SQL functions for string utilities, data masking/trimming, and dynamic schema naming.
 *   **🔥 Jinja Templating:** Dynamic SQL generation using `if-else` control flows and `for` loops directly inside models and analyses.
-*   **🛡️ Robust Testing & Docs:** Automated data quality enforcement using custom and built-in schema tests alongside a completely documented data lineage.
-
+*   **🛡️ Robust Testing & Docs:** Automated data quality enforcement using custom and built-in 
 
 ## 📊 Data Architecture & Modeling
-
-Here is the data architecture section split into two clean, separate, easy-to-copy code blocks.
-
----
-
-### Tab 1: Data Architecture & Strategy
-
-```
-## 📊 Data Architecture & Modeling
-
-This project implements a modular **Medallion Architecture** paired with **Slowly Changing Dimensions (SCD Type 2)** to transform raw, siloed source data into high-performance, analytics-ready datasets within Snowflake.
+    This project implements a modular **Medallion Architecture** paired with **Slowly Changing Dimensions (SCD Type 2)** to transform raw, siloed source data into high-performance, analytics-ready datasets within Snowflake.
 
 ```
 
@@ -91,40 +79,26 @@ This project implements a modular **Medallion Architecture** paired with **Slowl
 ```
 ### 🧱 The Medallion Layering Strategy
 
-```
-
-```
 #### 🥉 Bronze Layer (Raw Data / Ingestion)
 The entry point for our data pipeline. Models in this layer mirror the source structure exactly, acting as a historical record of ingestion with zero destructive transformations.
 * **`bronze_bookings`**: Direct ingestion of raw booking transactions, maintaining the original operational audit trail.
 * **`bronze_hosts`**: Raw host profile metadata extracted from the source system.
 * **`bronze_listings`**: Unfiltered property listing details containing unstructured or semi-structured raw text fields.
 
-```
-```
 #### 🥈 Silver Layer (Cleaned & Conformed / Integration)
 The data cleansing and standardization zone. Here, we apply enterprise data quality rules to prepare data for downstream relational structures.
 * **`silver_bookings`**: Validated and conformed transaction records with uniform timestamp formatting, explicit data type casting, and standard handling of null values.
 * **`silver_hosts`**: Enriched host profiles featuring unified names, standardized contact formats, and pre-calculated data quality metrics.
 * **`silver_listings`**: Standardized property metadata featuring cleaned currency fields, uniform location tracking, and price-tier categorization logic applied via custom macros.
 
-```
-```
 #### 🥇 Gold Layer (Business & Analytics-Ready)
 The delivery layer optimized for business intelligence, reporting, and ad-hoc data science queries. Data is modeled for both traditional Kimball dimensional architectures and modern flat reporting structures.
 * **`fact`**: A high-performance fact table built for star-schema dimensional modeling, containing granular, numeric measurement events and foreign keys mapping to our dimensions.
 * **`obt` (One Big Table)**: A fully denormalized, wide dataset combining `bookings`, `listings`, and `hosts`. By pre-joining these layers, we eliminate costly runtime `JOIN` operations inside BI tools like Tableau or Looker Studio, drastically cutting Snowflake compute usage for end-users.
 * **`ephemeral/` (Intermediate Models)**: Utilizes dbt's `ephemeral` materialization pattern to handle complex multi-stage CTE transformations. These temporary views exist only during compile time, keeping the Snowflake schema clean and free of intermediate clutter.
 
-```
 
----
-
-### Tab 2: Snapshot Tracking (SCD Type 2)
-
-```markdown
 ### 🕒 Snapshot Tracking (SCD Type 2)
-
 To preserve data lineage and enable accurate point-in-time analysis, the pipeline uses dbt snapshots to manage **Slowly Changing Dimensions (SCD Type 2)**. This captures mutation history without overwriting existing rows, stamping records with `dbt_valid_from` and `dbt_valid_to` fields.
 
 | Snapshot Dimension | Business Tracking Purpose |
@@ -204,7 +178,7 @@ AWS_DBT_Snowflake/
 ## 🎯 Key Features
 
 ###1. Incremental Loading
-Bronze and silver models utilize dbt's incremental materialization pattern to process only new or updated records. This drastically reduces Snowflake compute footprint by eliminating full table scans.
+    Bronze and silver models utilize dbt's incremental materialization pattern to process only new or updated records. This drastically reduces Snowflake compute footprint by eliminating full table scans.
 
 ```sql
 {{ config(
@@ -218,15 +192,14 @@ SELECT * FROM {{ ref('bronze_bookings') }}
 {% endif %}
 ```
 ###2. Custom Macros
-To maintain a DRY (Don't Repeat Yourself) codebase, reusable business logic is encapsulated inside custom dbt macros. For example, the tag() macro dynamically categorizes listing price tiers:
+    To maintain a DRY (Don't Repeat Yourself) codebase, reusable business logic is encapsulated inside custom dbt macros. For example, the tag() macro dynamically categorizes listing price tiers:
 ```
 -- Application within models:
 {{ tag('CAST(PRICE_PER_NIGHT AS INT)') }} AS PRICE_PER_NIGHT_TAG
 ---
 ````
-
 ###3. Dynamic SQL Generation (Jinja Loops)
-The OBT (One Big Table) and downstream analytical structures leverage Jinja control flows and loops. Instead of hardcoding repetitive `JOIN` or `SELECT` statements, the code dynamically generates structural columns:
+    The OBT (One Big Table) and downstream analytical structures leverage Jinja control flows and loops. Instead of hardcoding repetitive `JOIN` or `SELECT` statements, the code dynamically generates structural columns:
 
 ```sql
 {% set models = ['bookings', 'hosts', 'listings'] %}
@@ -237,9 +210,11 @@ SELECT
   {% endfor %}
 FROM {{ ref('fact_bookings') }}
 ```
-###4. Slowly Changing Dimensions (SCD Type 2)Source mutation tracking is fully automated via dbt snapshots. The pipeline tracks historical changes over time with timestamp-based monitoring:dbt_valid_from and dbt_valid_to fields are automatically managed.Historical data is completely preserved, enabling seamless point-in-time analytical auditing.
+###4. Slowly Changing Dimensions (SCD Type 2)
+    SCD Type 2 Source mutation tracking is fully automated via dbt snapshots. The pipeline tracks historical changes over time with timestamp-based monitoring:dbt_valid_from and dbt_valid_to fields are automatically managed.Historical data is completely preserved, enabling seamless point-in-time analytical auditing.
 
-###5. Multi-Layer Schema OrganizationTo maintain rigid data governance and clear separation of concerns, custom schema configurations dynamically route objects to dedicated layers within Snowflake:
+###5.Multi-Layer Schema Organization
+    Multi-Layer Schema OrganizationTo maintain rigid data governance and clear separation of concerns, custom schema configurations dynamically route objects to dedicated layers within Snowflake:
 🥉 Bronze Models $\rightarrow$ AIRBNB.BRONZE.*
 🥈 Silver Models $\rightarrow$ AIRBNB.SILVER.*
 🥇 Gold Models $\rightarrow$ AIRBNB.GOLD.*
